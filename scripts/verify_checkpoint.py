@@ -14,7 +14,12 @@ Checks:
   4. select_action() produces a finite action of the right shape.
   5. Two identical inputs give identical outputs (deterministic in eval mode).
 
-usage: verify_checkpoint.py <checkpoint_dir>   e.g. outputs/act_so101_main/checkpoints/last
+usage: verify_checkpoint.py <checkpoint_dir> [device]
+      e.g. verify_checkpoint.py outputs/act_so101_main/checkpoints/last
+           verify_checkpoint.py outputs/act_so101_main/checkpoints/000002000 cpu
+
+`device` defaults to cuda. Passing `cpu` lets you exercise the reload path
+while the GPU is busy training, without competing for VRAM.
 """
 
 import sys
@@ -30,6 +35,7 @@ from lerobot.policies.factory import make_policy, make_pre_post_processors
 
 REPO_ID = "lerobot/svla_so101_pickplace"
 ckpt_dir = Path(sys.argv[1] if len(sys.argv) > 1 else "outputs/act_so101_main/checkpoints/last")
+DEVICE = sys.argv[2] if len(sys.argv) > 2 else "cuda"
 model_dir = ckpt_dir / "pretrained_model"
 
 FAIL = []
@@ -54,7 +60,7 @@ for f in ["config.json", "model.safetensors", "train_config.json"]:
 # --- 1. config round-trips -------------------------------------------------
 cfg = PreTrainedConfig.from_pretrained(model_dir)
 cfg.pretrained_path = model_dir
-cfg.device = "cuda"
+cfg.device = DEVICE
 print(f"\n  policy type      : {cfg.type}")
 print(f"  chunk_size       : {cfg.chunk_size}")
 print(f"  n_action_steps   : {cfg.n_action_steps}")
@@ -89,7 +95,7 @@ check(
 preprocessor, postprocessor = make_pre_post_processors(
     policy_cfg=cfg,
     pretrained_path=model_dir,
-    preprocessor_overrides={"device_processor": {"device": "cuda"}},
+    preprocessor_overrides={"device_processor": {"device": DEVICE}},
 )
 check("pre/post processors reloaded from checkpoint", preprocessor is not None)
 
