@@ -110,6 +110,30 @@ print(f"\n  moved to GPU OK -- {img_key} now on {moved[img_key].device}")
 
 print()
 print("=" * 72)
+print("TRAINING-SHAPED BATCH (with delta_timestamps, as the trainer builds it)")
+print("=" * 72)
+# The raw dataset above returns action as (6,). ACT predicts action *chunks*
+# (chunk_size=100), so the trainer builds the dataset with delta_timestamps via
+# make_dataset(). Without them the policy fails on a dimension mismatch, so this
+# is the shape that actually matters.
+from lerobot.datasets.factory import resolve_delta_timestamps  # noqa: E402
+from lerobot.policies.factory import make_policy_config  # noqa: E402
+
+act_cfg = make_policy_config("act", device="cuda", push_to_hub=False)
+delta = resolve_delta_timestamps(act_cfg, meta)
+print(f"  delta_timestamps keys : {list(delta) if delta else None}")
+print(f"  chunk_size            : {act_cfg.chunk_size}")
+
+ds_chunked = LeRobotDataset(REPO_ID, delta_timestamps=delta)
+loader_c = DataLoader(ds_chunked, batch_size=BATCH, shuffle=True, num_workers=0)
+bc = next(iter(loader_c))
+for k in ("action", "observation.state", meta.camera_keys[0]):
+    print(f"  {k:<30} {tuple(bc[k].shape)}")
+assert bc["action"].shape[1] == act_cfg.chunk_size, "action chunk missing -- trainer would fail"
+print(f"  ==> action is chunked ({BATCH}, {act_cfg.chunk_size}, 6). Trainer-ready.")
+
+print()
+print("=" * 72)
 print("DECODE BACKEND -- EMPIRICAL, NOT CONFIGURED")
 print("=" * 72)
 print(f"  decode_video_frames_torchcodec   calls: {CALLS['torchcodec']}")
