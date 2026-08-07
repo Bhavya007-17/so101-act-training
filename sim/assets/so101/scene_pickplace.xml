@@ -1,0 +1,78 @@
+<mujoco model="so101_pickplace">
+  <!-- Pick-and-place scene wrapping the vendored menagerie SO-101.
+
+       Lives in the same directory as so101.xml on purpose: MuJoCo resolves
+       <compiler meshdir="assets"> relative to the *main* model file, so a scene
+       placed anywhere else would look for meshes in the wrong directory. This is
+       the same reason menagerie ships its own scene.xml next to the robot. -->
+  <include file="so101.xml"/>
+
+  <!-- Override the vendored 0.005 s (200 Hz) timestep with 1/240 s.
+       The three clocks must divide evenly or recording ticks drift against
+       physics steps: 240 Hz physics / 60 Hz control / 30 Hz recording gives
+       integer decimations of 4 and 8. 200 Hz would give 200/30 = 6.67.
+       Shrinking the timestep is stability-neutral-to-better, so the menagerie
+       solver tuning (implicitfast, elliptic cone, impratio=10) still holds. -->
+  <option timestep="0.00416666666666666667"/>
+
+  <statistic center="0.2 0 0.1" extent="0.8"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.35 0.35 0.35" specular="0.1 0.1 0.1"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="140" elevation="-25"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge"
+      rgb1="0.35 0.38 0.42" rgb2="0.26 0.29 0.33" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="8 8" reflectance="0.1"/>
+    <material name="object_mat" rgba="0.85 0.15 0.15 1"/>
+    <material name="target_mat" rgba="0.15 0.75 0.25 0.45"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0.3 -0.3 1.2" dir="-0.2 0.2 -1" directional="true" diffuse="0.5 0.5 0.5"/>
+    <light pos="-0.2 0.4 0.9" dir="0.2 -0.4 -1" directional="false" diffuse="0.35 0.35 0.35"/>
+
+    <geom name="floor" size="0 0 0.05" pos="0 0 0" type="plane" material="groundplane"
+      condim="3" friction="1 0.05 0.005"/>
+
+    <!-- External 3/4 view. xyaxes computed for eye=(0.55,-0.42,0.38) looking at
+         (0.25,0,0.05) with world +z up. -->
+    <camera name="external" mode="fixed" pos="0.55 -0.42 0.38"
+      xyaxes="0.8138 0.5813 0 -0.3131 0.4384 0.8426" fovy="55"/>
+
+    <!-- Manipuland. freejoint => qpos tail is [x y z qw qx qy qz]. -->
+    <body name="object" pos="0.25 0.0 0.015">
+      <freejoint name="object_free"/>
+      <geom name="object" type="box" size="0.015 0.015 0.015" material="object_mat"
+        mass="0.02" condim="4" friction="1 0.03 0.003" solref="0.01 1"
+        contype="2" conaffinity="1"/>
+    </body>
+
+    <!-- Drop zone. Visual only: contype/conaffinity 0 so it never perturbs physics. -->
+    <body name="target_zone" pos="0.10 0.22 0.0005">
+      <geom name="target_zone" type="cylinder" size="0.04 0.0005" material="target_mat"
+        contype="0" conaffinity="0" group="1"/>
+    </body>
+  </worldbody>
+
+  <equality>
+    <!-- Scripted grasp. Disabled at compile time; toggled at runtime through
+         mjData.eq_active, with eq_data re-anchored to the live relative pose so
+         attaching never snaps the object. Grasp success is therefore scripted,
+         not a physical contact outcome. -->
+    <weld name="grasp_weld" body1="gripper" body2="object" active="false"
+      solref="0.005 1" torquescale="1"/>
+  </equality>
+
+  <keyframe>
+    <!-- home: arm clear of the floor, gripper open, object at nominal pose.
+         qpos = 6 arm joints + 7 object freejoint. -->
+    <key name="home"
+      qpos="0 -0.9 1.2 0.7 0 1.2  0.25 0 0.015 1 0 0 0"
+      ctrl="0 -0.9 1.2 0.7 0 1.2"/>
+  </keyframe>
+</mujoco>

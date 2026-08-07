@@ -16,6 +16,10 @@ dependencies = [
     # torchcodec comes from PyPI (CPU build), NOT the cu128 index -- see below.
     "torchcodec==0.10.0",
     "lerobot==0.5.0",
+    "mujoco>=3.8.1",
+    "mink>=1.2.0",
+    "imageio>=2.37.4",
+    "matplotlib>=3.11.1",
 ]
 
 [tool.uv]
@@ -33,6 +37,11 @@ explicit = true
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu128" }]
 torchvision = [{ index = "pytorch-cu128" }]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
 # NOTE: torchcodec is deliberately NOT sourced from pytorch-cu128.
 # The 0.10.0+cu128 build dynamically links NVIDIA NPP (libnppicc.so.12) for
 # GPU colour conversion, but neither torch 2.10 nor the torchcodec wheel
