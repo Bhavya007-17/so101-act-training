@@ -1,0 +1,40 @@
+# --- Python / uv ---
+.venv/
+.venv-lockcheck/
+__pycache__/
+*.py[cod]
+build/
+dist/
+wheels/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# --- Training outputs & checkpoints ---
+outputs/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+
+# --- Experiment tracking ---
+wandb/
+runs/
+tb_logs/
+logs/
+*.log
+
+# --- Dataset / model caches ---
+# HF caches live under ~/.cache by default, but pin these in case HF_HOME
+# is ever redirected into the repo.
+.cache/
+hf_cache/
+data/
+datasets/
+.huggingface/
+
+# --- Editor / OS ---
+.vscode/
+.idea/
+.DS_Store

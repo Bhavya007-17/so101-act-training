@@ -1,0 +1,46 @@
+[project]
+name = "lerobot-toolchain-validation"
+version = "0.1.0"
+description = "Reproducible LeRobot 0.5.0 + CUDA toolchain validation on WSL2 (RTX 5070 Laptop / Blackwell sm_120)"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # --- Pinned deliberately, NOT resolved transitively. ---
+    # The GPU is an RTX 5070 Laptop = Blackwell, compute capability 12.0 (sm_120).
+    # PyTorch cu126 and earlier contain NO sm_120 kernels. cu128 is the floor.
+    # torch 2.10 / torchvision 0.25 / torchcodec 0.10 is the documented-compatible
+    # triple AND the exact top of lerobot 0.5.0's declared bounds
+    # (torch<2.11, torchvision<0.26, torchcodec<0.11).
+    "torch==2.10.0",
+    "torchvision==0.25.0",
+    # torchcodec comes from PyPI (CPU build), NOT the cu128 index -- see below.
+    "torchcodec==0.10.0",
+    "lerobot==0.5.0",
+]
+
+[tool.uv]
+package = false
+
+# Pin torch-family wheels to the CUDA 12.8 index explicitly.
+# `explicit = true` means NOTHING resolves from here unless named in
+# [tool.uv.sources] below -- this is what stops a transitive resolve from
+# silently pulling the CPU-only PyPI wheel.
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+torchvision = [{ index = "pytorch-cu128" }]
+# NOTE: torchcodec is deliberately NOT sourced from pytorch-cu128.
+# The 0.10.0+cu128 build dynamically links NVIDIA NPP (libnppicc.so.12) for
+# GPU colour conversion, but neither torch 2.10 nor the torchcodec wheel
+# itself installs the NPP runtime -- so it fails at import with
+# "libnppicc.so.12: cannot open shared object file".
+# The PyPI (CPU) build has no NPP dependency, and is what plain
+# `pip install lerobot` resolves to, i.e. the mainline LeRobot path.
+# CPU decode is also the right call on an 8 GB card: video decoding should
+# not compete with training for VRAM. 16 CPU cores handle it fine.
+# (Alternative if GPU/NVDEC decode is ever wanted: keep the +cu128 build and
+# add an explicit `nvidia-npp-cu12` dependency.)
