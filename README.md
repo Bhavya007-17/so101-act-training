@@ -19,12 +19,21 @@ is attributable to the data rather than the setup.
 | Dataset | [`lerobot/svla_so101_pickplace`](https://huggingface.co/datasets/lerobot/svla_so101_pickplace) — SO-101, 50 eps, 11,939 frames |
 | Policy | ACT, 51,597,190 params, ResNet-18 backbone |
 
+## Outcome
+
+**10,000 / 10,000 steps, exit code 0.** 67.2 min wall clock · peak VRAM 6,664 MiB
+(81.8% of 8 GB) · final loss 0.161 · checkpoint reloads in a fresh process and
+infers on GPU. Full numbers and the known-good/unvalidated split in
+**[RESULTS.md](RESULTS.md)**.
+
 ## Documents
 
 - **[SETUP.md](SETUP.md)** — the install sequence *as actually executed*, every
   version pin, every error hit and what fixed it. The load-bearing artifact.
 - **[DECISIONS.md](DECISIONS.md)** — dataset choice, batch size, decode backend,
   and every deviation from the official docs with its rationale.
+- **[RESULTS.md](RESULTS.md)** — measured outcome, and an explicit statement of
+  what is now known-good versus still unvalidated.
 
 ## Reproduce
 

@@ -165,7 +165,7 @@ index or off it.
 | AMP via `ACCELERATE_MIXED_PRECISION=bf16`, not `--policy.use_amp` | The documented flag is a no-op in the 0.5.0 training script. |
 | No LeRobot extras installed | ACT's module imports only core deps. Extras are for simulators/hardware/other policies. Verified by reading the installed source. |
 | `--policy.push_to_hub=false` passed explicitly | Defaults to `True`; `validate()` raises without a `repo_id`. Required for any local-only run. |
-| `num_workers=4` (not higher, despite 16 cores) | RAM, not CPU, is the constraint: 12 GB total with ~3.2 GB free under load. Decode is already not the bottleneck, so more workers buy nothing and risk swapping. |
+| `num_workers=4` (not higher, despite 16 cores) | RAM, not CPU, is the constraint — see §8. Decode is already not the bottleneck, so more workers buy nothing and risk swapping. |
 
 ---
 
@@ -177,3 +177,25 @@ dataloader or memory leak to surface — while still finishing in about an hour.
 Going longer would only buy policy quality, which is explicitly not the goal.
 
 `--seed=1000` (the LeRobot default) is passed explicitly so the run is restatable.
+
+---
+
+## 8. Host RAM is the real constraint on this machine — not VRAM
+
+Measured during the 10k-step run. Worth recording because it is counter-intuitive:
+the 8 GB VRAM everyone worries about was never the tight resource.
+
+| Consumer | RSS |
+|---|---|
+| Training tree (main + 4 dataloader workers) | ~9.8 GiB |
+| An unrelated concurrent job on this box (`hive` ffmpeg render) | ~2.8 GiB |
+| **Total against 12 GiB RAM** | **→ 6.3 GiB pushed to swap** |
+
+Each dataloader worker costs **~1.8 GiB** at 480×640×2 cameras, so `num_workers=4`
+is essentially this machine's ceiling. **It did not degrade the run** — throughput
+stayed flat at ~2.5 step/s and `data_s` stayed at 0.014–0.034 s, so the hot
+working set never left RAM; what swapped was idle memory.
+
+**Guidance for future runs on this box:** drop to `num_workers=2` if training a
+larger dataset, or if running anything else memory-hungry concurrently. VRAM has
+headroom; RAM does not.
