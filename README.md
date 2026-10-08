@@ -1,5 +1,7 @@
 # LeRobot 0.5.0 toolchain validation — WSL2 + Blackwell
 
+> **Status: paused (September 2026).** Completed: a 10,000-step ACT training run on the public SO-101 dataset (`lerobot/svla_so101_pickplace`) with verified checkpoint reload and GPU inference in a fresh process, plus two 80-episode simulated SO-101 datasets ([task 1](https://github.com/Bhavya007-17/p1-so101-sim-t1), [task 2](https://github.com/Bhavya007-17/p1-so101-sim-t2)). The pre-registered policy comparison was not run.
+
 A reproducible LeRobot **0.5.0** environment, proven end-to-end by training an
 **ACT** policy on a public Hugging Face dataset until a checkpoint landed and
 reloaded.
